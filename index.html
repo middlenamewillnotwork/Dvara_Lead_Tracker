@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dvara (Spark Money) Analytics Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="icon.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">Fetching Data...</span>
+        </div>
+    </div>
+
+    <!-- Message Box -->
+    <div id="messageBox" class="message-box hidden">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        <span id="messageText"></span>
+    </div>
+
+    <!-- Navigation Header -->
+    <nav class="nav-header">
+        <div class="nav-content">
+            <div class="nav-brand">
+                <i class="fas fa-chart-line text-blue-600 mr-3"></i>
+                <h1>Dvara (Spark Money) Analytics</h1>
+                <span class="nav-subtitle">SPOC & Source Dashboard</span>
+            </div>
+            <div class="nav-actions">
+                <div class="status-indicator" id="liveDataStatus">
+                    <div class="status-dot"></div>
+                    <span>Live Data</span>
+                </div>
+                <div class="status-indicator" id="internetStatus">
+                    <div class="status-dot offline"></div>
+                    <span>No Internet</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <div class="control-content">
+                <!-- View Toggle -->
+                <div class="view-toggle-container">
+                    <div class="toggle-wrapper" id="viewToggle">
+                        <div class="toggle-slider" id="slider"></div>
+                        <button id="dashboardViewBtn" class="toggle-btn active">
+                            <i class="fas fa-chart-pie mr-2"></i>
+                            Dashboard
+                        </button>
+                        <button id="tableViewBtn" class="toggle-btn">
+                            <i class="fas fa-table mr-2"></i>
+                            Table View
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Date Filters -->
+                <div class="date-filters">
+                    <div class="date-input-group">
+                        <label for="startDate" class="date-label">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            From
+                        </label>
+                        <input type="date" id="startDate" class="date-input">
+                    </div>
+                    <div class="date-input-group">
+                        <label for="endDate" class="date-label">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            To
+                        </label>
+                        <input type="date" id="endDate" class="date-input">
+                    </div>
+                    <button id="refreshBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        Refresh
+                    </button>
+                    <button id="attendanceBtn" class="refresh-btn" style="margin-left: 10px;">
+                        <i class="fas fa-user-check mr-2"></i>
+                        Attendance
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="view-section">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon bg-blue-500">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalAmount">0</h3>
+                        <p>Total Leads</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon bg-green-500">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalTransactions">0</h3>
+                        <p>Total SPOCs</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon bg-purple-500">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="uniqueCRM">0</h3>
+                        <p>Today's Leads</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon bg-orange-500">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="activeCampaigns">0</h3>
+                        <p>Present Today</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Tables -->
+            <div class="tables-grid">
+                <div class="table-card summary">
+                    <div class="table-header">
+                        <h2><i class="fas fa-user-tie mr-2"></i>MTD SPOC Performance</h2>
+                        <div class="summary-filters">
+                            <input type="text" id="crmSearchInput" placeholder="Search SPOC..." class="search-input small" style="margin-right: 10px;">
+                            <select id="crmCallingDateFilter" class="filter-select small">
+                                <option value="">All Date</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="summary-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header" data-sort-key="crmId">SPOC Name</th>
+                                    <th class="sortable-header" data-sort-key="centre">Centre</th>
+                                    <th class="sortable-header" data-sort-key="count">Lead Count</th>
+                                </tr>
+                            </thead>
+                            <tbody id="crmSummaryTableBody"></tbody>
+                            <tfoot>
+                                <tr class="table-total">
+                                    <td><strong>Grand Total</strong></td>
+                                    <td></td>
+                                    <td><strong id="crmTotalCount">0</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="table-card summary">
+                    <div class="table-header">
+                        <h2><i class="fas fa-calendar-day mr-2"></i>FTD SPOC Performance</h2>
+                        <div class="summary-filters">
+                            <input type="text" id="ftdSearchInput" placeholder="Search SPOC..." class="search-input small">
+                        </div>
+                    </div>
+                    <div class="summary-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th class="sortable-header" data-sort-key="crmId">SPOC Name</th>
+                                    <th class="sortable-header" data-sort-key="centre">Centre</th>
+                                    <th class="sortable-header" data-sort-key="count">Today's Leads</th>
+                                </tr>
+                            </thead>
+                            <tbody id="campaignSummaryTableBody"></tbody>
+                            <tfoot>
+                                <tr class="table-total">
+                                    <td><strong>Grand Total</strong></td>
+                                    <td></td>
+                                    <td><strong id="campaignTotalCount">0</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Analytics Tables -->
+            <div class="charts-grid">
+                <div class="table-card summary">
+                    <div class="table-header">
+                        <h2><i class="fas fa-user-slash mr-2"></i><span id="zeroLeadsTitle">Agents with 0 Leads Today: 0</span></h2>
+                    </div>
+                    <div class="summary-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Agent Name</th>
+                                    <th>Centre</th>
+                                </tr>
+                            </thead>
+                            <tbody id="zeroLeadsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="table-card summary">
+                    <div class="table-header">
+                        <h2><i class="fas fa-trophy mr-2"></i>Top 10 Agents (MTD)</h2>
+                    </div>
+                    <div class="summary-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Agent Name</th>
+                                    <th>Centre</th>
+                                    <th>Leads</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topMtdTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="table-card summary">
+                    <div class="table-header">
+                        <h2><i class="fas fa-medal mr-2"></i>Top 10 Agents (FTD)</h2>
+                    </div>
+                    <div class="summary-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Agent Name</th>
+                                    <th>Centre</th>
+                                    <th>Today's Leads</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topFtdTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div id="tableView" class="view-section hidden">
+            <div class="table-card full-width">
+                <div class="table-header">
+                    <h2><i class="fas fa-database mr-2"></i>Complete Transaction Data</h2>
+                    <div class="table-filters">
+                        <div class="filter-group">
+                            <select id="campaignFilter" class="filter-select">
+                                <option value="">All Source</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="crmFilter" class="filter-select">
+                                <option value="">All SPOC</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="paymentModeFilter" class="filter-select">
+                                <option value="">All Transaction Mode</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <select id="callingDateFilter" class="filter-select">
+                                <option value="">All Date</option>
+                            </select>
+                        </div>
+                        <div class="search-container">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" id="tableSearch" placeholder="Search transactions..." class="search-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="table-count">
+                    <span id="tableCount">0 leads</span>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="sortable-header" data-sort-key="SPOC Name">SPOC Name</th>
+                                <th class="sortable-header" data-sort-key="Customer Name">Customer Name</th>
+                                <th class="sortable-header" data-sort-key="Mobile Number">Mobile Number</th>
+                                <th class="sortable-header" data-sort-key="Company">Company</th>
+                                <th class="sortable-header" data-sort-key="State">State</th>
+                                <th class="sortable-header" data-sort-key="Source of come">Source</th>
+                                <th class="sortable-header" data-sort-key="Unique ID">Unique ID</th>
+                                <th class="sortable-header" data-sort-key="Amount Received">Amount</th>
+                                <th class="sortable-header" data-sort-key="Transaction Mode">Transaction Mode</th>
+                                <th class="sortable-header" data-sort-key="Filing Type">Filing Type</th>
+                                <th class="sortable-header" data-sort-key="Timestamp">Timestamp</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Popup -->
+    <div id="attendancePopup" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-96 overflow-hidden">
+                <div class="p-4 border-b flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">SPOC Attendance</h3>
+                    <button id="closeAttendance" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-4 overflow-y-auto max-h-80">
+                    <div id="attendanceList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="data-service.js"></script>
+    <script src="data-processor.js"></script>
+    <script src="chart-renderer.js"></script>
+    <script src="table-renderer.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
