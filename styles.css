@@ -361,6 +361,55 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Analytics Charts Full Width */
+.analytics-charts-full {
+    margin-bottom: 2rem;
+}
+
+.chart-full {
+    width: 100%;
+}
+
+.charts-header {
+    display: flex;
+    width: 100%;
+    gap: 1rem;
+}
+
+.chart-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chart-title-with-filter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.chart-section h2 {
+    margin-bottom: 1rem;
+}
+
+.stats-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 1200px) {
+    .charts-header {
+        flex-direction: column;
+    }
+    
+    .chart-container {
+        width: 100% !important;
+    }
+}
+
 .chart-card {
     background: white;
     border-radius: 16px;
@@ -666,6 +715,14 @@ body {
         grid-template-columns: 1fr;
     }
     
+    .charts-header {
+        flex-direction: column;
+    }
+    
+    .chart-container {
+        width: 100% !important;
+    }
+    
     .tables-grid {
         grid-template-columns: 1fr;
     }
@@ -719,6 +776,63 @@ body {
 
 .table-container::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
+}
+
+/* Toggle Switch for Stats */
+.stats-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toggle-switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider-small {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 20px;
+    transition: 0.3s;
+}
+
+.toggle-slider-small:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+.toggle-switch input:checked + .toggle-slider-small {
+    background-color: var(--primary-color);
+}
+
+.toggle-switch input:checked + .toggle-slider-small:before {
+    transform: translateX(20px);
+}
+
+.toggle-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b;
 }
 
 /* Utility Classes */

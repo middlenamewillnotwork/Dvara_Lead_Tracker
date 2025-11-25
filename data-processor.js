@@ -136,6 +136,8 @@ class DataProcessor {
         TableRenderer.renderZeroLeadsTable();
         TableRenderer.renderTopMtdTable();
         TableRenderer.renderTopFtdTable();
+        // Render analytics
+        Analytics.renderAnalytics();
         // Sort by Timestamp (latest first) by default
         const sortedData = this.sortTable([...AppState.filteredData], 'Timestamp', 'desc');
         TableRenderer.renderTable(sortedData);

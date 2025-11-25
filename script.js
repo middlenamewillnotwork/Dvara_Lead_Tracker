@@ -5,6 +5,9 @@ class App {
         this.setupEventListeners();
         this.setDefaultDates();
         this.initInternetMonitoring();
+        Analytics.setupEventListeners();
+        Analytics.setDefaultHourlyDate();
+        Analytics.setDefaultStatsDateRange();
         await this.loadData();
     }
 

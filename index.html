@@ -257,6 +257,54 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Advanced Analytics Section -->
+            <div class="table-card full-width" style="margin-bottom: 2rem;">
+                <div class="table-header">
+                    <h2><i class="fas fa-chart-bar mr-2"></i>Day-wise Lead Count</h2>
+                </div>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="dayWiseChart"></canvas>
+                </div>
+            </div>
+
+            <div class="table-card full-width" style="margin-bottom: 2rem;">
+                <div class="table-header">
+                    <h2><i class="fas fa-clock mr-2"></i>Hourly Lead Distribution</h2>
+                    <input type="date" id="hourlyDateFilter" class="date-input" style="width: auto;">
+                </div>
+                <div class="chart-container" style="height: 350px;">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="table-card summary">
+                    <div class="table-header">
+                        <h2><i class="fas fa-chart-line mr-2"></i>Lead Statistics</h2>
+                        <div class="stats-controls">
+                            <input type="date" id="statsStartDate" class="date-input" style="width: auto; margin-right: 5px;">
+                            <input type="date" id="statsEndDate" class="date-input" style="width: auto; margin-right: 10px;">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="statsToggle">
+                                <span class="toggle-slider-small"></span>
+                                <span class="toggle-label">Full Day</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="summary-table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Count</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leadStatsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Table View -->
@@ -341,6 +389,7 @@
     <script src="data-processor.js"></script>
     <script src="chart-renderer.js"></script>
     <script src="table-renderer.js"></script>
+    <script src="analytics.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
