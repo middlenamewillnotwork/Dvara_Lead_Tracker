@@ -12,9 +12,26 @@ class Analytics {
         const canvas = document.getElementById('dayWiseChart');
         if (!canvas) return;
 
+        // Get date range for day-wise chart
+        const dayStartDate = document.getElementById('dayWiseStartDate')?.value;
+        const dayEndDate = document.getElementById('dayWiseEndDate')?.value;
+        
+        // Filter data by date range if provided
+        let chartData = AppState.allData;
+        if (dayStartDate && dayEndDate) {
+            const start = new Date(dayStartDate);
+            const end = new Date(dayEndDate);
+            end.setHours(23, 59, 59, 999); // Include full end date
+            chartData = AppState.allData.filter(row => {
+                if (!row['Timestamp']) return false;
+                const rowDate = new Date(row['Timestamp']);
+                return rowDate >= start && rowDate <= end;
+            });
+        }
+
         // Group leads by day within date range
         const dayWiseData = {};
-        AppState.filteredData.forEach(row => {
+        chartData.forEach(row => {
             if (!row['Timestamp']) return;
             const date = new Date(row['Timestamp']).toDateString();
             dayWiseData[date] = (dayWiseData[date] || 0) + 1;
@@ -72,20 +89,31 @@ class Analytics {
         const selectedDate = document.getElementById('hourlyDateFilter')?.value || new Date().toISOString().split('T')[0];
         const targetDate = new Date(selectedDate).toDateString();
 
-        // Group leads by hour for selected date (7am to 9pm only)
-        const hourlyData = Array(15).fill(0); // 7am to 9pm = 15 hours
+        // Group leads by 30-minute intervals (7am to 9pm = 28 intervals)
+        const intervalData = Array(28).fill(0); // 14 hours * 2 intervals per hour = 28
         AppState.allData.forEach(row => {
             if (!row['Timestamp']) return;
             const rowDate = new Date(row['Timestamp']);
             if (rowDate.toDateString() === targetDate) {
                 const hour = rowDate.getHours();
+                const minute = rowDate.getMinutes();
                 if (hour >= 7 && hour <= 21) {
-                    hourlyData[hour - 7]++;
+                    const intervalIndex = (hour - 7) * 2 + Math.floor(minute / 30);
+                    if (intervalIndex < 28) {
+                        intervalData[intervalIndex]++;
+                    }
                 }
             }
         });
 
-        const hours = Array.from({length: 15}, (_, i) => `${i + 7}:00`);
+        // Generate 30-minute interval labels
+        const intervals = [];
+        for (let h = 7; h <= 21; h++) {
+            for (let m = 0; m < 60; m += 30) {
+                if (h === 21 && m > 0) break; // Stop at 21:00
+                intervals.push(`${h}:${m.toString().padStart(2, '0')}`);
+            }
+        }
 
         if (this.charts.hourlyChart) {
             this.charts.hourlyChart.destroy();
@@ -95,13 +123,13 @@ class Analytics {
         this.charts.hourlyChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: hours,
+                labels: intervals,
                 datasets: [{
-                    label: 'Hourly Leads',
-                    data: hourlyData,
+                    label: '30-min Intervals',
+                    data: intervalData,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 3,
+                    borderWidth: 2,
                     fill: true,
                     tension: 0.4
                 }]
@@ -116,7 +144,7 @@ class Analytics {
                         anchor: 'end',
                         align: 'top',
                         formatter: (value) => value > 0 ? value : '',
-                        font: { size: 10, weight: 'bold' },
+                        font: { size: 9, weight: 'bold' },
                         color: '#374151'
                     }
                 },
@@ -126,7 +154,11 @@ class Analytics {
                         title: { display: true, text: 'Lead Count' }
                     },
                     x: {
-                        title: { display: true, text: 'Hour of Day' }
+                        title: { display: true, text: '30-Minute Intervals' },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
                     }
                 }
             }
@@ -222,13 +254,20 @@ class Analytics {
 
         const formatDate = (date) => date ? date.toLocaleDateString('en-GB') : 'N/A';
         
-        // Calculate comparison with best day
-        const difference = todayCount - bestDayData.count;
-        const isAhead = difference >= 0;
-        const comparisonText = isAhead 
-            ? `<i class="fas fa-arrow-up text-green-500 mr-1"></i>Ahead by ${Math.abs(difference)} leads`
-            : `<i class="fas fa-arrow-down text-red-500 mr-1"></i>Behind by ${Math.abs(difference)} leads`;
-        const comparisonColor = isAhead ? 'text-green-600' : 'text-red-600';
+        // Calculate comparisons
+        const bestDifference = todayCount - bestDayData.count;
+        const isBestAhead = bestDifference >= 0;
+        const bestComparisonText = isBestAhead 
+            ? `<i class="fas fa-arrow-up text-green-500 mr-1"></i>Ahead by ${Math.abs(bestDifference)} leads`
+            : `<i class="fas fa-arrow-down text-red-500 mr-1"></i>Behind by ${Math.abs(bestDifference)} leads`;
+        const bestComparisonColor = isBestAhead ? 'text-green-600' : 'text-red-600';
+
+        const yesterdayDifference = todayCount - yesterdayCount;
+        const isYesterdayAhead = yesterdayDifference >= 0;
+        const yesterdayComparisonText = isYesterdayAhead 
+            ? `<i class="fas fa-arrow-up text-green-500 mr-1"></i>Ahead by ${Math.abs(yesterdayDifference)} leads`
+            : `<i class="fas fa-arrow-down text-red-500 mr-1"></i>Behind by ${Math.abs(yesterdayDifference)} leads`;
+        const yesterdayComparisonColor = isYesterdayAhead ? 'text-green-600' : 'text-red-600';
 
         tbody.innerHTML = `
             <tr>
@@ -248,8 +287,11 @@ class Analytics {
                 <td class="font-bold text-purple-600">${todayCount}</td>
             </tr>
             <tr style="background-color: #f8fafc;">
-                <td colspan="2" class="text-center ${comparisonColor} font-medium" style="padding: 0.75rem;">
-                    ${comparisonText} vs Best Day
+                <td class="text-center ${bestComparisonColor} font-medium" style="padding: 0.5rem; border-right: 1px solid #e2e8f0;">
+                    ${bestComparisonText} vs Best Day
+                </td>
+                <td class="text-center ${yesterdayComparisonColor} font-medium" style="padding: 0.5rem;">
+                    ${yesterdayComparisonText} vs Yesterday
                 </td>
             </tr>
         `;
@@ -327,6 +369,62 @@ class Analytics {
                 this.saveStatsDateRange();
                 this.renderLeadStatsTable();
             });
+        }
+
+        const dayWiseStartDate = document.getElementById('dayWiseStartDate');
+        const dayWiseEndDate = document.getElementById('dayWiseEndDate');
+        if (dayWiseStartDate) {
+            dayWiseStartDate.addEventListener('change', () => {
+                this.saveDayWiseDateRange();
+                this.renderDayWiseLeadChart();
+            });
+        }
+        if (dayWiseEndDate) {
+            dayWiseEndDate.addEventListener('change', () => {
+                this.saveDayWiseDateRange();
+                this.renderDayWiseLeadChart();
+            });
+        }
+    }
+
+    static setDefaultDayWiseDateRange() {
+        const dayStartDate = document.getElementById('dayWiseStartDate');
+        const dayEndDate = document.getElementById('dayWiseEndDate');
+        if (dayStartDate && dayEndDate) {
+            const today = new Date();
+            const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            const savedStart = localStorage.getItem('dayWiseStartDate');
+            const savedEnd = localStorage.getItem('dayWiseEndDate');
+            const currentMonthStart = formatDate(firstOfMonth);
+            const currentToday = formatDate(today);
+            
+            if (savedStart && savedEnd && savedStart.startsWith(currentMonthStart.substring(0, 7))) {
+                dayStartDate.value = savedStart;
+                dayEndDate.value = currentToday;
+            } else {
+                dayStartDate.value = currentMonthStart;
+                dayEndDate.value = currentToday;
+            }
+            
+            localStorage.setItem('dayWiseStartDate', dayStartDate.value);
+            localStorage.setItem('dayWiseEndDate', dayEndDate.value);
+        }
+    }
+    
+    static saveDayWiseDateRange() {
+        const dayStartDate = document.getElementById('dayWiseStartDate');
+        const dayEndDate = document.getElementById('dayWiseEndDate');
+        if (dayStartDate && dayEndDate) {
+            localStorage.setItem('dayWiseStartDate', dayStartDate.value);
+            localStorage.setItem('dayWiseEndDate', dayEndDate.value);
         }
     }
 

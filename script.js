@@ -9,6 +9,7 @@ class App {
             Analytics.setupEventListeners();
             Analytics.setDefaultHourlyDate();
             Analytics.setDefaultStatsDateRange();
+            Analytics.setDefaultDayWiseDateRange();
         }
         await this.loadData();
     }
