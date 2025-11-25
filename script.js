@@ -5,9 +5,11 @@ class App {
         this.setupEventListeners();
         this.setDefaultDates();
         this.initInternetMonitoring();
-        Analytics.setupEventListeners();
-        Analytics.setDefaultHourlyDate();
-        Analytics.setDefaultStatsDateRange();
+        if (typeof Analytics !== 'undefined') {
+            Analytics.setupEventListeners();
+            Analytics.setDefaultHourlyDate();
+            Analytics.setDefaultStatsDateRange();
+        }
         await this.loadData();
     }
 
@@ -95,6 +97,12 @@ class App {
             await DataService.fetchData();
             console.log('Data loaded:', AppState.allData.length, 'rows');
             DataProcessor.filterAndRender();
+            // Ensure analytics render after data is loaded
+            setTimeout(() => {
+                if (typeof Analytics !== 'undefined') {
+                    Analytics.renderAnalytics();
+                }
+            }, 100);
             this.hideMessage();
         } catch (error) {
             console.error('Data loading error:', error);
